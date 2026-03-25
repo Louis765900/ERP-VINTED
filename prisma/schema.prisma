@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  name      String
+  role      String   @default("VENDEUR")
+  color     String   @default("#6366f1")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[] @relation("SellerProducts")
+  sales    Sale[]
+  logs     AuditLog[]
+
+  @@map("users")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  barcode      String?
+  location     String?
+  category     String?
+  buyPrice     Float
+  displayPrice Float
+  minPrice     Float
+  sellPrice    Float?
+  hasFlaw      Boolean  @default(false)
+  status       String   @default("DISPONIBLE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reservedAt   DateTime?
+  publishedAt  DateTime?
+  soldAt       DateTime?
+  notes        String?
+
+  seller     User?     @relation("SellerProducts", fields: [sellerId], references: [id])
+  sellerId   String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId String?
+  sale       Sale?
+
+  @@map("products")
+}
+
+model Client {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  notes      String?
+  totalSpent Float    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sales Sale[]
+
+  @@map("clients")
+}
+
+model Sale {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  sellPrice     Float
+  buyPrice      Float
+  commission    Float
+  profit        Float
+  platform      String   @default("Vinted")
+  notes         String?
+  date          DateTime @default(now())
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String  @unique
+  seller    User    @relation(fields: [sellerId], references: [id])
+  sellerId  String
+  client    Client? @relation(fields: [clientId], references: [id])
+  clientId  String?
+
+  @@map("sales")
+}
+
+model Supplier {
+  id             String   @id @default(cuid())
+  name           String
+  contact        String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  totalPurchases Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products Product[]
+
+  @@map("suppliers")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  @@map("audit_logs")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
